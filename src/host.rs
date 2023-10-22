@@ -11,8 +11,48 @@ struct DfsClientConn {
 }
 
 impl DfsClientConn {
-    fn handle_conn(&mut self) -> i32 {
-        1
+    fn handle_conn(&mut self) -> usize {
+        let mut total_bytes_read: usize = 0;
+        let mut buffer = [0; 1024];
+        // Continuously read data from the TcpStream and store it in the buff.
+        loop {
+            match self.conn.read(&mut buffer) {
+                Ok(bytes_read) => {
+                    if bytes_read == 0 {
+                        // No more data to read. Connection closed.
+                        break;
+                    }
+                    // Extend the buff with the data read from the TcpStream.
+                    self.buff.extend_from_slice(&buffer[..bytes_read]);
+                    total_bytes_read += bytes_read;
+                    
+                    // Print the received data.
+                    let received_data = &buffer[..bytes_read];
+                    match std::str::from_utf8(received_data) {
+                        Ok(decoded_str) => {
+                            println!("Decoded string: {}", decoded_str);
+                        }
+                        Err(_) => {
+                            println!("Unable to decode the received data as a valid string.");
+                        }
+                    }
+                }
+                Err(err) => {
+                    eprintln!("Error reading from connection: {}", err);
+                    break;
+                }
+            }
+        }
+
+        // You can print or process the received data if needed.
+        println!("Received {} bytes of data", total_bytes_read);
+
+        // You can also write data back to the connection if required.
+        // For example:
+        // self.conn.write_all(b"Response data").expect("Failed to write data");
+
+        // Return the total number of bytes read.
+        total_bytes_read
     }
 }
 
